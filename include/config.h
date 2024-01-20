@@ -37,7 +37,7 @@
 #endif
 
 /* rules from libretro-common/include/memmap.h */
-#if !defined(_WIN32) && !defined(WIN32) && !defined(__CELLOS_LV2__) && !defined(PSP) && !defined(PS2) && !defined(GEKKO) && !defined(VITA) && !defined(_XBOX) && !defined(_3DS) && !defined(WIIU) && !defined(SWITCH) && !defined(HAVE_LIBNX)
+#if !defined(_WIN32) && !defined(WIN32) && !defined(__CELLOS_LV2__) && !defined(PSP) && !defined(PS2) && !defined(GEKKO) && !defined(VITA) && !defined(_XBOX) && !defined(_3DS) && !defined(WIIU) && !defined(SWITCH) && !defined(HAVE_LIBNX) && !defined(SF2000)
 #define C_HAVE_MPROTECT 1
 #endif
 
@@ -145,12 +145,12 @@
 #define HAVE_SYS_TYPES_H 1
 #endif
 
-#if !defined(__WIN32__) && !defined(__POWERPC__) && !defined(VITA) && !defined(_3DS)
+#if !defined(__WIN32__) && !defined(__POWERPC__) && !defined(VITA) && !defined(_3DS)&& !defined(SF2000)
 # define HAVE_PWD_H 1
 #endif
 
 // ----- STANDARD LIBRARY FEATURES
-#if !defined (__QNX__) && !defined(VITA) && !defined(PSP) && !defined(__HAIKU__)
+#if !defined (__QNX__) && !defined(VITA) && !defined(PSP) && !defined(__HAIKU__)&& !defined(SF2000)
 #define DIRENT_HAS_D_TYPE 1 /* struct dirent has d_type */
 #endif
 

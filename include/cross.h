@@ -55,7 +55,11 @@ static inline int c99_snprintf(char *s, size_t len, const char *fmt, ...)
 }
 #endif
 #else										/* LINUX / GCC */
+#if !defined(SF2000)
 #include <dirent.h>
+#else
+#include "../../../dirent.h"
+#endif
 #include <unistd.h>
 #define LONGTYPE(a) a##LL
 #endif
@@ -137,7 +141,11 @@ typedef struct dir_struct {
 #else
 
 //#include <sys/types.h> //Included above
+#if !defined(SF2000)
 #include <dirent.h>
+#else
+#include "../../../dirent.h"
+#endif
 
 typedef struct dir_struct { 
 	DIR*  dir;

@@ -139,6 +139,21 @@ else ifeq ($(platform),gcw0)
   CPUFLAGS := -ffast-math -march=mips32r2 -mtune=mips32r2 -mhard-float -fexpensive-optimizations -frename-registers
   COMMONFLAGS += -pthread
   STRIPCMD := /opt/gcw0-toolchain/usr/mipsel-gcw0-linux-uclibc/bin/strip --strip-all
+# SF2000
+else ifeq ($(platform), sf2000)
+  OUTNAME := $(TARGET_NAME)_libretro_$(platform).a
+  MIPS:=/opt/mips32-mti-elf/2019.09-03-2/bin/mips-mti-elf-
+  CC = $(MIPS)gcc
+  CXX = $(MIPS)g++
+  AR = $(MIPS)ar
+  CPUFLAGS := -EL -march=mips32 -mtune=mips32 -msoft-float -G0 -mno-abicalls -fno-pic
+  CPUFLAGS += -ffast-math -fomit-frame-pointer -ffunction-sections -fdata-sections 
+  STATIC_LINKING = 1
+  COMMONFLAGS += -DSF2000 -DNDEBUG -std=gnu++11 -D__LIBRETRO__ -D_FILE_OFFSET_BITS=64 -DDISABLE_DYNAREC
+  COMMONFLAGS += -fpermissive -DRARCH_INTERNAL -DHAVE_CONFIG_H -DSTATIC_LINKING
+  COMMONFLAGS +=  -I../../libs/libretro-common/include
+  #COMMONFLAGS += -enable-threads=posix -pthread
+  STATIC_LINKING = 1
 else ifneq ($(findstring Haiku,$(shell uname -s)),)
   OUTNAME := dosbox_pure_libretro.so
   LDFLAGS := -Wl,--gc-sections -fno-ident -lroot -lnetwork

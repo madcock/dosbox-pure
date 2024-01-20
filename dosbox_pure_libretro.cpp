@@ -37,13 +37,20 @@
 #include "src/dos/drives.h"
 #include "keyb2joypad.h"
 #include "libretro-common/include/libretro.h"
+#if !defined(SF2000)
 #include "libretro-common/include/retro_timers.h"
+#else
+#include "../../libs/libretro-common/include/retro_timers.h"
+#endif
 #include <string>
 #include <sstream>
 #include <chrono>
 
 // RETROARCH AUDIO/VIDEO
 #ifdef GEKKO // From RetroArch/config.def.h
+#define DBP_DEFAULT_SAMPLERATE 44100.0
+#define DBP_DEFAULT_SAMPLERATE_STRING "44100"
+#elif defined(SF2000)
 #define DBP_DEFAULT_SAMPLERATE 44100.0
 #define DBP_DEFAULT_SAMPLERATE_STRING "44100"
 #elif defined(_3DS)
