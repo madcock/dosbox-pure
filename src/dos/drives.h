@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2002-2021  The DOSBox Team
- *  Copyright (C) 2020-2023  Bernhard Schelling
+ *  Copyright (C) 2020-2024  Bernhard Schelling
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -489,7 +489,7 @@ private:
 #define DOSPATH_REMOVE_ENDINGDOTS(VAR) char VAR##_buf[DOS_PATHLENGTH]; DrivePathRemoveEndingDots((const char**)&VAR, VAR##_buf)
 #define DOSPATH_REMOVE_ENDINGDOTS_KEEP(VAR) const char* VAR##_org = VAR; DOSPATH_REMOVE_ENDINGDOTS(VAR)
 void DrivePathRemoveEndingDots(const char** path, char path_buf[DOS_PATHLENGTH]);
-Bit8u DriveGetIndex(DOS_Drive* drv); // index in Drives array, returns DOS_DRIVES if not found
+Bit8u DriveGetIndex(DOS_Drive* drv); // index in Drives array, returns DOS_DRIVES if not found (includes shadows)
 bool DriveForceCloseFile(DOS_Drive* drv, const char* name);
 bool DriveFindDriveVolume(DOS_Drive* drv, char* dir_path, DOS_DTA & dta, bool fcb_findfirst);
 Bit32u DBP_Make8dot3FileName(char* target, Bit32u target_len, const char* source, Bit32u source_len);
@@ -498,7 +498,7 @@ bool ReadAndClose(DOS_File *df, std::string& out, Bit32u maxsize = 1024*1024);
 Bit16u DriveReadFileBytes(DOS_Drive* drv, const char* path, Bit8u* outbuf, Bit16u numbytes);
 bool DriveCreateFile(DOS_Drive* drv, const char* path, const Bit8u* buf, Bit32u numbytes);
 Bit32u DriveCalculateCRC32(const Bit8u *ptr, size_t len, Bit32u crc = 0);
-void DriveFileIterator(DOS_Drive* drv, void(*func)(const char* path, bool is_dir, Bit32u size, Bit16u date, Bit16u time, Bit8u attr, Bitu data), Bitu data = 0);
+void DriveFileIterator(DOS_Drive* drv, void(*func)(const char* path, bool is_dir, Bit32u size, Bit16u date, Bit16u time, Bit8u attr, Bitu data), Bitu data = 0, const char* root = nullptr);
 
 template <typename TVal> struct StringToPointerHashMap
 {
@@ -730,6 +730,32 @@ public:
 	virtual Bits UnMount(void);
 private:
 	struct patchDriveImpl* impl;
+};
+
+class mirrorDrive : public DOS_Drive {
+public:
+	mirrorDrive(DOS_Drive& under, bool autodelete_under, const char* mirrorFrom = NULL, const char* mirrorTo = NULL);
+	virtual ~mirrorDrive();
+	virtual bool FileOpen(DOS_File * * file, char * name,Bit32u flags);
+	virtual bool FileCreate(DOS_File * * file, char * name,Bit16u attributes);
+	virtual bool Rename(char * oldname,char * newname);
+	virtual bool FileUnlink(char * name);
+	virtual bool FileExists(const char* name);
+	virtual bool RemoveDir(char * dir);
+	virtual bool MakeDir(char * dir);
+	virtual bool TestDir(char * dir);
+	virtual bool FindFirst(char * dir, DOS_DTA & dta, bool fcb_findfirst=false);
+	virtual bool FindNext(DOS_DTA & dta);
+	virtual bool FileStat(const char* name, FileStat_Block * const stat_block);
+	virtual bool GetFileAttr(char * name, Bit16u * attr);
+	virtual bool AllocationInfo(Bit16u * bytes_sector, Bit8u * sectors_cluster, Bit16u * total_clusters, Bit16u * free_clusters);
+	virtual bool GetShadows(DOS_Drive*& a, DOS_Drive*& b);
+	virtual Bit8u GetMediaByte(void);
+	virtual bool isRemote(void);
+	virtual bool isRemovable(void);
+	virtual Bits UnMount(void);
+private:
+	struct mirrorDriveImpl* impl;
 };
 
 #endif

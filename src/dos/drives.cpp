@@ -1,6 +1,6 @@
 /*
  *  Copyright (C) 2002-2021  The DOSBox Team
- *  Copyright (C) 2020-2023  Bernhard Schelling
+ *  Copyright (C) 2020-2024  Bernhard Schelling
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -118,21 +118,24 @@ DOS_Drive::DOS_Drive() {
 
 //DBP: Added these helper utility functions
 void DOS_Drive::ForceCloseAll() {
-	Bit8u i, drive = DOS_DRIVES;
-	for (i = 0; i < DOS_DRIVES; i++) {
-		if (Drives[i] == this) {
-			drive = i;
-			break;
-		}
-	}
-	if (drive != DOS_DRIVES) {
-		for (i = 0; i < DOS_FILES; i++) {
-			if (Files[i] && Files[i]->GetDrive() == drive) {
-				DBP_ASSERT((Files[i]->refCtr > 0) == Files[i]->open); // closed files can hang around while the DOS program still holds the handle
-				while (Files[i]->refCtr > 0) { if (Files[i]->IsOpen()) Files[i]->Close(); Files[i]->RemoveRef(); }
-				delete Files[i];
-				Files[i] = NULL;
+	for (Bit8u i = 0; i != DOS_DRIVES; i++) {
+		if (Drives[i] != this) continue;
+		for (Bit8u j = 0; j < DOS_FILES; j++) {
+			if (Files[j] && Files[j]->GetDrive() == i) {
+				DBP_ASSERT((Files[j]->refCtr > 0) == Files[j]->open); // closed files can hang around while the DOS program still holds the handle
+				while (Files[j]->refCtr > 0) { if (Files[j]->IsOpen()) Files[j]->Close(); Files[j]->RemoveRef(); }
+				delete Files[j];
+				Files[j] = NULL;
 			}
+		}
+		for (;;) { // unmount any drives that shadow this drive
+			Drives[i] = NULL;
+			Bit8u shadowdrv = DriveGetIndex(this);
+			Drives[i] = this;
+			if (shadowdrv == DOS_DRIVES) break;
+			if (Drives[shadowdrv]->UnMount() != 0) { DBP_ASSERT(0); break; }
+			Drives[shadowdrv] = NULL;
+			mem_writeb(Real2Phys(dos.tables.mediaid)+shadowdrv*9,0);
 		}
 	}
 }
@@ -329,8 +332,8 @@ Bit8u DriveGetIndex(DOS_Drive* drv)
 
 bool DriveForceCloseFile(DOS_Drive* drv, const char* name)
 {
-	Bit8u drive = DriveGetIndex(drv);
-	if (drive == DOS_DRIVES) return false;
+	Bit8u drive = 0; // We explicitly don't look up index of shadowed drives, the shadowing drive should be responsible to call DriveForceCloseFile before unlink/rename
+	for (;; drive++) { if (drive == DOS_DRIVES) return false; if (Drives[drive] == drv) break; }
 	DOSPATH_REMOVE_ENDINGDOTS(name);
 	bool found_file = false;
 	for (Bit8u i = 0; i < DOS_FILES; i++) {
@@ -548,7 +551,7 @@ Bit32u DriveCalculateCRC32(const Bit8u *ptr, size_t len, Bit32u crc)
 }
 
 //DBP: utility function to evaluate an entire drives filesystem
-void DriveFileIterator(DOS_Drive* drv, void(*func)(const char* path, bool is_dir, Bit32u size, Bit16u date, Bit16u time, Bit8u attr, Bitu data), Bitu data)
+void DriveFileIterator(DOS_Drive* drv, void(*func)(const char* path, bool is_dir, Bit32u size, Bit16u date, Bit16u time, Bit8u attr, Bitu data), Bitu data, const char* root)
 {
 	if (!drv) return;
 	struct Iter
@@ -585,7 +588,7 @@ void DriveFileIterator(DOS_Drive* drv, void(*func)(const char* path, bool is_dir
 		}
 	};
 	std::vector<std::string> dirs;
-	dirs.emplace_back("");
+	dirs.emplace_back(root ? root : "");
 	std::string dir;
 	while (dirs.size())
 	{
